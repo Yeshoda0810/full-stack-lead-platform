@@ -6,6 +6,19 @@ enforced on the server, not just hidden in the UI.
 
 Built for the Digital Heroes Full Stack Development task (Task A).
 
+**Live app:** https://full-stack-lead-platform.onrender.com
+
+**Demo accounts:**
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | `admin@leadplatform.demo` | `AdminDemo123!` |
+| Member | `member@leadplatform.demo` | `MemberDemo123!` |
+
+> Note: this runs on Render's free tier, which spins a service down after
+> 15 minutes of no traffic. The first request after a quiet period can take
+> 30-60 seconds to respond while it wakes back up - that's expected, not a bug.
+
 ## Why this shape
 
 Two services, one deploy:
@@ -33,6 +46,13 @@ that one file plus the handful of call sites in `routes/leads.js` — see
 [Swapping to Postgres](#swapping-to-postgres) below. `node:sqlite` is
 labelled experimental by Node; that's a documented, deliberate tradeoff for
 this exercise, not an oversight.
+
+One consequence of that choice worth being upfront about: Render's free
+tier doesn't support a persistent disk, so the SQLite file resets whenever
+the service redeploys or restarts. The start command handles this by
+running the (idempotent) seed script before boot every time - see
+[Deploying](#deploying) - rather than requiring a manual shell step, since
+free-tier Render doesn't provide shell access either.
 
 ### Auth & permissions
 
@@ -71,13 +91,6 @@ cd client
 npm install
 npm run dev       # http://localhost:5173, proxies /api to :4000
 ```
-
-Demo accounts (created by `npm run seed`):
-
-| Role | Email | Password |
-|---|---|---|
-| Admin | `admin@leadplatform.demo` | `AdminDemo123!` |
-| Member | `member@leadplatform.demo` | `MemberDemo123!` |
 
 ## Tests
 
@@ -127,29 +140,32 @@ what powers the timeline on the detail screen.
 
 ## Deploying
 
-Both services can run for free.
+Deployed on Render's free tier, one web service for both API and client.
 
-1. **Database:** none needed to provision — `node:sqlite` writes to a file
-   on disk. On a host with an ephemeral filesystem (e.g. Render's free
-   tier without a persistent disk) that file resets on redeploy; for a real
-   production deployment, mount a small persistent disk (Render free tier
-   supports this) or move to Postgres (see below).
-2. **Build the client:**
-   ```bash
-   cd client && npm run build
+1. **Root Directory:** `server`
+2. **Build Command:**
    ```
-   This outputs `client/dist`, which `server/src/app.js` serves as static
-   files and falls back to for any non-`/api` route (SPA routing).
-3. **Deploy the server** (e.g. Render/Railway free web service):
-   - Root: `server/`
-   - Build command: `npm install && cd ../client && npm install && npm run build`
-   - Start command: `npm start`
-   - Env vars: `JWT_SECRET` (required — a real random string, not the dev
-     default), `NODE_ENV=production`
-   - After first deploy, run `npm run seed` once (via the host's shell/console)
-     to create the two demo accounts.
-4. Because client and server are one process, there's a single URL and no
-   CORS configuration is even required in production.
+   npm install && cd ../client && npm install --include=dev && npm run build
+   ```
+   The `--include=dev` matters: with `NODE_ENV=production` set (below), npm
+   skips `devDependencies` by default, and Vite lives there. Without this
+   flag the build fails with `sh: 1: vite: not found`.
+3. **Start Command:**
+   ```
+   npm run seed && npm start
+   ```
+   `npm run seed` is idempotent (it checks whether any user already exists
+   and exits immediately if so), so running it on every boot is safe. This
+   also compensates for Render's free tier not offering a persistent disk
+   or shell access — there's no manual step needed to (re)create the demo
+   accounts after a redeploy or a cold-start restart.
+4. **Environment Variables:**
+   - `JWT_SECRET` — a real random string, not the dev default
+   - `NODE_ENV=production`
+5. **Instance Type:** Free
+
+Because client and server are one process, there's a single URL and no
+CORS configuration is even required in production.
 
 ### Swapping to Postgres
 
@@ -161,9 +177,41 @@ the `CREATE TABLE IF NOT EXISTS` block using Postgres syntax (mainly:
 `ENUM` types instead of `CHECK` constraints, though the `CHECK` approach
 also works unchanged on Postgres). No route file needs to change, because
 every route talks to `db.prepare(...).get/all/run(...)`-shaped calls — only
-that helper's internals move.
+that helper's internals move. This would also remove the need for the
+seed-on-every-boot workaround above, since a managed Postgres instance
+persists on its own.
 
-## AI use
 
-Noted per the task kit's request in the submission below (see the `AI use`
-section of the deliverables doc) rather than duplicated here.
+# AI use
+
+I used Claude (Claude.ai) heavily throughout both tasks — it scaffolded the
+Express API, the React client, the test suites, and first drafts of the
+four Task B documents. I want to be straightforward about that rather than
+downplay it, since the brief explicitly says using AI well is the point.
+Here's specifically what I did on top of the AI-generated draft, and where
+I made the calls myself:
+
+- **Deployment was mine to work through, not the AI's.** Claude gave me a
+  starting Build/Start command for Render, but the actual deploy failed on
+  the first attempt (`vite: not found`) because `NODE_ENV=production` was
+  silently skipping `devDependencies` during the client build. I diagnosed
+  that from the Render logs with Claude's help, and made the call to add
+  `--include=dev` to the client install step rather than, say, removing
+  `NODE_ENV=production` (which would have changed Express's runtime
+  behavior, not just the build). I also decided to run the seed script on
+  every boot (`npm run seed && npm start`) once I understood Render's free
+  tier doesn't give me a persistent disk or shell access — that's a
+  workaround I chose given the constraints of the free tier I'm actually
+  deploying on, not something generic to the app.
+- **The permission rule (members can only edit leads assigned to them;
+  admins can edit/reassign anything) was a judgment call I reviewed and
+  agreed with** — it fits how a small team actually works: reps own their
+  own conversations end to end, managers step in only when needed.
+
+What I did *not* do: hand in the first draft unedited. I read through the
+permission logic, the test cases, and all four Task B documents rather
+than treating them as a black box, and the deployment fix above is a
+concrete example of debugging I had to do myself that the AI's first
+answer didn't anticipate.
+
+
