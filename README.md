@@ -181,6 +181,37 @@ that helper's internals move. This would also remove the need for the
 seed-on-every-boot workaround above, since a managed Postgres instance
 persists on its own.
 
-## AI use
 
-See `AI-USE.md` in the repo root.
+# AI use
+
+I used Claude (Claude.ai) heavily throughout both tasks — it scaffolded the
+Express API, the React client, the test suites, and first drafts of the
+four Task B documents. I want to be straightforward about that rather than
+downplay it, since the brief explicitly says using AI well is the point.
+Here's specifically what I did on top of the AI-generated draft, and where
+I made the calls myself:
+
+- **Deployment was mine to work through, not the AI's.** Claude gave me a
+  starting Build/Start command for Render, but the actual deploy failed on
+  the first attempt (`vite: not found`) because `NODE_ENV=production` was
+  silently skipping `devDependencies` during the client build. I diagnosed
+  that from the Render logs with Claude's help, and made the call to add
+  `--include=dev` to the client install step rather than, say, removing
+  `NODE_ENV=production` (which would have changed Express's runtime
+  behavior, not just the build). I also decided to run the seed script on
+  every boot (`npm run seed && npm start`) once I understood Render's free
+  tier doesn't give me a persistent disk or shell access — that's a
+  workaround I chose given the constraints of the free tier I'm actually
+  deploying on, not something generic to the app.
+- **The permission rule (members can only edit leads assigned to them;
+  admins can edit/reassign anything) was a judgment call I reviewed and
+  agreed with** — it fits how a small team actually works: reps own their
+  own conversations end to end, managers step in only when needed.
+
+What I did *not* do: hand in the first draft unedited. I read through the
+permission logic, the test cases, and all four Task B documents rather
+than treating them as a black box, and the deployment fix above is a
+concrete example of debugging I had to do myself that the AI's first
+answer didn't anticipate.
+
+
