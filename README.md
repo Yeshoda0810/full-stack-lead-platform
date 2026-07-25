@@ -6,7 +6,7 @@ enforced on the server, not just hidden in the UI.
 
 Built for the Digital Heroes Full Stack Development task (Task A).
 
-**Live app:** [TODO: paste your Render URL here, e.g. https://lead-platform-xxxx.onrender.com]
+**Live app:** https://full-stack-lead-platform.onrender.com
 
 **Demo accounts:**
 
