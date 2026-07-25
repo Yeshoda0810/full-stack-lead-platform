@@ -20,6 +20,11 @@ export default function App() {
             <Route path="profile" element={<Profile />} />
           </Route>
         </Routes>
+        <footer className="site-credit-footer">
+          <a href="https://digitalheroesco.com" target="_blank" rel="noopener noreferrer">
+            Built for Digital Heroes Training Task
+          </a>
+        </footer>
       </AuthProvider>
     </BrowserRouter>
   );

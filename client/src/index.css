@@ -292,3 +292,25 @@ label {
   margin-top: 5px;
   flex-shrink: 0;
 }
+
+/* ---- Required credit footer (task verification) --------------------- */
+.site-credit-footer {
+  position: fixed;
+  bottom: 10px;
+  right: 14px;
+  font-size: 11px;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 5px 10px;
+  border-radius: 999px;
+  z-index: 50;
+}
+.site-credit-footer a {
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+.site-credit-footer a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
